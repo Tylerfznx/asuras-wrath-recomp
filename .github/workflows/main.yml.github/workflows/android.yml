@@ -1,0 +1,48 @@
+
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Instalar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar ferramentas Android
+        run: |
+          sdkmanager "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "cmake;3.31.6" \
+            "ndk;28.2.13676358"
+
+      - name: Tentar compilar APK
+        run: |
+          chmod +x android/gradlew
+          export ANDROID_HOME="$ANDROID_SDK_ROOT"
+          export ANDROID_NDK="$ANDROID_SDK_ROOT/ndk/28.2.13676358"
+          bash android/build_android.sh
+
+      - name: Disponibilizar APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asura-wrath-android
+          path: out/dist/*.apk
+          if-no-files-found: warn
+          
